@@ -124,27 +124,34 @@ class AssetGeneratorService
      */
     protected function createMockImage(string $prompt): string
     {
-        // Create a simple placeholder image
-        $img = \Intervention\Image\ImageManager::gd()->canvas(800, 600, '#1a1a2e');
+        // Create image using GD directly
+        $img = imagecreatetruecolor(800, 600);
         
-        // Add gradient effect using layers
-        $img->rectangle(0, 0, 400, 600, function ($draw) {
-            $draw->background('#667eea');
-        });
-        $img->rectangle(400, 0, 800, 600, function ($draw) {
-            $draw->background('#764ba2');
-        });
+        // Colors
+        $bgColor = imagecolorallocate($img, 26, 26, 46); // #1a1a2e
+        $color1 = imagecolorallocate($img, 102, 126, 234); // #667eea
+        $color2 = imagecolorallocate($img, 118, 75, 162); // #764ba2
+        $textColor = imagecolorallocate($img, 255, 255, 255);
         
-        // Add text (shortened prompt)
-        $shortPrompt = substr($prompt, 0, 40);
-        $img->text($shortPrompt, 400, 300, function ($font) {
-            $font->size(16);
-            $font->color('#ffffff');
-            $font->align('center');
-            $font->valign('middle');
-        });
+        // Fill background
+        imagefill($img, 0, 0, $bgColor);
         
-        return $img->encode('jpeg', 90)->getEncoded();
+        // Add gradient (left half purple, right half blue-purple)
+        imagefilledrectangle($img, 0, 0, 400, 600, $color1);
+        imagefilledrectangle($img, 400, 0, 800, 600, $color2);
+        
+        // Add text
+        $shortPrompt = substr($prompt, 0, 35);
+        imagestring($img, 5, 50, 290, $shortPrompt, $textColor);
+        
+        // Output to string
+        ob_start();
+        imagejpeg($img, null, 90);
+        $data = ob_get_clean();
+        
+        imagedestroy($img);
+        
+        return $data;
     }
 
     /**

@@ -91,27 +91,31 @@ class VideoGeneratorService
      */
     protected function createMockVideo(string $description): string
     {
-        // Create a simple animated GIF as placeholder
-        // In production, use actual FFmpeg or video API
+        // Create a simple GIF placeholder using GD
+        $img = imagecreatetruecolor(640, 360);
         
-        $imgManager = new \Intervention\Image\ImageManager('gd');
-        $frames = [];
-        $colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+        $colors = [
+            imagecolorallocate($img, 102, 126, 234),
+            imagecolorallocate($img, 118, 75, 162),
+            imagecolorallocate($img, 240, 147, 251),
+            imagecolorallocate($img, 245, 87, 108),
+            imagecolorallocate($img, 79, 172, 254),
+        ];
         
-        for ($i = 0; $i < 10; $i++) {
-            $img = $imgManager->canvas(640, 360, $colors[$i % count($colors)]);
-            $img->text("Video: " . substr($description, 0, 30), 320, 180, function ($font) {
-                $font->size(14);
-                $font->color('#ffffff');
-                $font->align('center');
-                $font->valign('middle');
-            });
-            $frames[] = $img->encode('gif');
-        }
-
-        // For now, just return a simple placeholder
-        // In production: use FFmpeg to create actual video
-        return implode('', $frames);
+        $textColor = imagecolorallocate($img, 255, 255, 255);
+        
+        // Create frame
+        $colorIndex = 0;
+        imagefilledrectangle($img, 0, 0, 640, 360, $colors[$colorIndex]);
+        imagestring($img, 5, 200, 170, "Video: " . substr($description, 0, 25), $textColor);
+        
+        ob_start();
+        imagegif($img);
+        $data = ob_get_clean();
+        
+        imagedestroy($img);
+        
+        return $data;
     }
 
     /**
