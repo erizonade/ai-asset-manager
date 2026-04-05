@@ -77,21 +77,8 @@ class AssetGeneratorService
      */
     protected function tryGenerateAI(string $prompt): ?string
     {
-        try {
-            // Generate at 1024x1024 then upscale to 4K (2048x2048)
-            $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . 
-                   '?width=1024&height=1024&nologin=true&seed=' . rand(1, 99999) . 
-                   '&enhance=false&model=flux';
-            
-            $response = Http::timeout(30)->get($url);
-            
-            if ($response->successful() && strlen($response->body()) > 5000) {
-                return $response->body();
-            }
-        } catch (\Exception $e) {
-            Log::warning("AI generation timeout/failed: " . $e->getMessage());
-        }
-        
+        // Skip AI for now - use placeholder instantly
+        // AI generation can be slow and cause timeouts
         return null;
     }
 
