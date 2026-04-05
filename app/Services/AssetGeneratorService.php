@@ -33,14 +33,19 @@ class AssetGeneratorService
     }
 
     /**
-     * Generate image - uses AI API or fallback to placeholder
+     * Generate image - tries AI first, fallback to placeholder
      */
     public function generateImage(int $promptId, string $categorySlug): Asset
     {
         $prompt = Prompt::findOrFail($promptId);
         
-        // Use placeholder (instant) - AI generation can be added later with async processing
-        $imageData = $this->createPlaceholderImage($prompt->prompt, $categorySlug);
+        // Try AI generation (non-blocking with quick timeout)
+        $imageData = $this->tryGenerateAI($prompt->prompt);
+        
+        // Fallback to placeholder if AI takes too long or fails
+        if (empty($imageData)) {
+            $imageData = $this->createPlaceholderImage($prompt->prompt, $categorySlug);
+        }
         
         // Generate SEO-friendly filename
         $fileName = $this->generateSeoFileName($categorySlug, $prompt->id, 'jpg');
@@ -68,11 +73,25 @@ class AssetGeneratorService
     }
 
     /**
-     * Generate image using AI API - NOT USED for now (use async/queue for production)
+     * Try to generate AI image with short timeout
      */
-    protected function generateWithAI(string $prompt): ?string
+    protected function tryGenerateAI(string $prompt): ?string
     {
-        // Skip AI for now - use placeholder
+        try {
+            // Use Pollinations with faster settings
+            $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . 
+                   '?width=768&height=768&nologin=true&seed=' . rand(1, 99999) . 
+                   '&enhance=false&model=flux';
+            
+            $response = Http::timeout(30)->get($url);
+            
+            if ($response->successful() && strlen($response->body()) > 5000) {
+                return $response->body();
+            }
+        } catch (\Exception $e) {
+            Log::warning("AI generation timeout/failed: " . $e->getMessage());
+        }
+        
         return null;
     }
 
