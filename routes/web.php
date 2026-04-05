@@ -26,6 +26,7 @@ Route::post('/assets/upload', [WebAssetController::class, 'upload'])->name('asse
 Route::get('/assets/{asset}', [WebAssetController::class, 'show'])->name('assets.show');
 Route::post('/assets/{asset}/status', [WebAssetController::class, 'updateStatus'])->name('assets.status');
 Route::post('/assets/{asset}/optimize', [WebAssetController::class, 'optimize'])->name('assets.optimize');
+Route::post('/assets/{asset}/upscale', [WebAssetController::class, 'upscale'])->name('assets.upscale');
 Route::delete('/assets/{asset}', [WebAssetController::class, 'destroy'])->name('assets.destroy');
 
 // Prompts

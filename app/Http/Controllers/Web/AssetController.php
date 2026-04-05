@@ -178,6 +178,16 @@ class AssetController extends Controller
         }
     }
 
+    public function upscale(Asset $asset)
+    {
+        try {
+            $upscaled = app(AssetGeneratorService::class)->upscale($asset);
+            return redirect()->back()->with('success', 'Image upscaled to 4K!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Upscale failed: ' . $e->getMessage());
+        }
+    }
+
     public function destroy(Asset $asset)
     {
         $filePath = storage_path('app/public/' . $asset->file_path);

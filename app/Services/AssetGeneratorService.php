@@ -78,9 +78,9 @@ class AssetGeneratorService
     protected function tryGenerateAI(string $prompt): ?string
     {
         try {
-            // Use Pollinations with faster settings
+            // Use Pollinations with faster settings - generate at higher res for upscale
             $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . 
-                   '?width=768&height=768&nologin=true&seed=' . rand(1, 99999) . 
+                   '?width=1024&height=1024&nologin=true&seed=' . rand(1, 99999) . 
                    '&enhance=false&model=flux';
             
             $response = Http::timeout(30)->get($url);
@@ -93,6 +93,49 @@ class AssetGeneratorService
         }
         
         return null;
+    }
+
+    /**
+     * Upscale an existing image (4x resolution)
+     */
+    public function upscale(Asset $asset): Asset
+    {
+        $currentPath = storage_path('app/public/' . $asset->file_path);
+        
+        if (!file_exists($currentPath)) {
+            throw new \Exception("Image file not found");
+        }
+        
+        // Get current image data
+        $imageData = file_get_contents($currentPath);
+        
+        try {
+            // Try Pollinations upscale
+            $url = 'https://image.pollinations.ai/upscale?upscale=4';
+            
+            $response = Http::timeout(60)
+                ->attach('image', $imageData, 'image.jpg')
+                ->post($url);
+            
+            if ($response->successful() && strlen($response->body()) > 10000) {
+                // Save upscaled image
+                $newPath = str_replace('.jpg', '_upscaled.jpg', $currentPath);
+                file_put_contents($newPath, $response->body());
+                
+                // Update asset
+                $asset->update([
+                    'file_path' => str_replace('assets/', 'assets/', basename($newPath)),
+                    'file_name' => basename($newPath),
+                ]);
+                
+                return $asset;
+            }
+        } catch (\Exception $e) {
+            Log::warning("Upscale failed: " . $e->getMessage());
+        }
+        
+        // If upscale fails, return original
+        return $asset;
     }
 
     /**

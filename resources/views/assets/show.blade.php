@@ -66,8 +66,14 @@
                 </div>
                 <form action="{{ route('assets.optimize', $asset) }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium mb-2">
                         Optimize for Adobe Stock
+                    </button>
+                </form>
+                <form action="{{ route('assets.upscale', $asset) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium">
+                        🔥 Upscale to 4K
                     </button>
                 </form>
             </div>
