@@ -191,7 +191,9 @@
 </div>
 
 <!-- Pagination -->
+@if($assets instanceof \Illuminate\Pagination\LengthAwarePaginator)
 <div class="mt-6">
     {{ $assets->links() }}
 </div>
+@endif
 @endsection

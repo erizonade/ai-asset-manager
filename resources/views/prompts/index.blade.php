@@ -182,7 +182,10 @@
     </table>
 </div>
 
+<!-- Pagination -->
+@if($prompts instanceof \Illuminate\Pagination\LengthAwarePaginator)
 <div class="mt-6">
     {{ $prompts->links() }}
 </div>
+@endif
 @endsection
