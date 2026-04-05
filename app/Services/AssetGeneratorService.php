@@ -124,12 +124,15 @@ class AssetGeneratorService
      */
     protected function createMockImage(string $prompt): string
     {
-        // Create a simple placeholder image with gradient
-        $img = Image::canvas(800, 600, '#1a1a2e');
+        // Create a simple placeholder image
+        $img = \Intervention\Image\ImageManager::gd()->canvas(800, 600, '#1a1a2e');
         
-        // Add some visual interest
-        $img->rectangle(0, 0, 800, 600, function ($draw) {
-            $draw->background('linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+        // Add gradient effect using layers
+        $img->rectangle(0, 0, 400, 600, function ($draw) {
+            $draw->background('#667eea');
+        });
+        $img->rectangle(400, 0, 800, 600, function ($draw) {
+            $draw->background('#764ba2');
         });
         
         // Add text (shortened prompt)

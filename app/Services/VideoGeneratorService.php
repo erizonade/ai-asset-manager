@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Asset;
 use App\Models\Prompt;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
 
 class VideoGeneratorService
 {
@@ -88,18 +87,19 @@ class VideoGeneratorService
     }
 
     /**
-     * Create placeholder video file
+     * Create placeholder video file (GIF)
      */
     protected function createMockVideo(string $description): string
     {
         // Create a simple animated GIF as placeholder
         // In production, use actual FFmpeg or video API
         
+        $imgManager = new \Intervention\Image\ImageManager('gd');
         $frames = [];
         $colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
         
         for ($i = 0; $i < 10; $i++) {
-            $img = Image::canvas(640, 360, $colors[$i % count($colors)]);
+            $img = $imgManager->canvas(640, 360, $colors[$i % count($colors)]);
             $img->text("Video: " . substr($description, 0, 30), 320, 180, function ($font) {
                 $font->size(14);
                 $font->color('#ffffff');
