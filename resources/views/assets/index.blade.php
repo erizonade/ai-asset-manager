@@ -111,6 +111,10 @@
                 <label class="block text-sm font-medium mb-2">Number of Assets</label>
                 <input type="number" name="count" value="5" min="1" max="50" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700">
             </div>
+            <div class="flex items-center gap-3">
+                <input type="checkbox" name="upscale" id="upscale" value="1" class="w-5 h-5 rounded">
+                <label for="upscale" class="text-sm font-medium">🔥 Generate in 4K (Upscale)</label>
+            </div>
             <div class="flex gap-4">
                 <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium">Generate</button>
                 <button type="button" onclick="document.getElementById('generateModal').classList.add('hidden')" class="px-6 py-2 bg-gray-300 dark:bg-dark-600 rounded-lg font-medium">Cancel</button>

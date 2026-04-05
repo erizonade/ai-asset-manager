@@ -22,6 +22,7 @@ Route::get('/assets/create', [WebAssetController::class, 'create'])->name('asset
 Route::post('/assets', [WebAssetController::class, 'store'])->name('assets.store');
 Route::post('/assets/video', [WebAssetController::class, 'storeVideo'])->name('assets.video');
 Route::post('/assets/batch', [WebAssetController::class, 'storeBatch'])->name('assets.batch');
+Route::post('/assets/generate-upscale', [WebAssetController::class, 'generateUpscale'])->name('assets.generate-upscale');
 Route::post('/assets/upload', [WebAssetController::class, 'upload'])->name('assets.upload');
 Route::get('/assets/{asset}', [WebAssetController::class, 'show'])->name('assets.show');
 Route::post('/assets/{asset}/status', [WebAssetController::class, 'updateStatus'])->name('assets.status');

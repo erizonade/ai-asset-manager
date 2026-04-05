@@ -92,15 +92,33 @@ class AssetController extends Controller
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'count' => 'nullable|integer|min:1|max:50',
+            'upscale' => 'nullable|boolean',
         ]);
 
-        try {
-            $assets = $this->assetService->batchGenerate(
-                $validated['category_id'],
-                $validated['count'] ?? 5
-            );
+        $upscale = $request->input('upscale', false);
 
-            // Get fresh data for view
+        try {
+            $assets = [];
+            $category = Category::findOrFail($validated['category_id']);
+            
+            for ($i = 0; $i < ($validated['count'] ?? 5); $i++) {
+                // Generate prompt if needed
+                $promptService = app(PromptGeneratorService::class);
+                $result = $promptService->generateAuto($category->slug, 'en', 'image');
+                $result['category_id'] = $validated['category_id'];
+                $prompt = $promptService->createPrompt($result);
+                
+                // Generate asset with or without upscale
+                if ($upscale) {
+                    $asset = $this->assetService->generateWithUpscale($prompt->id, $category->slug);
+                } else {
+                    $asset = $this->assetService->generateImage($prompt->id, $category->slug);
+                }
+                
+                $prompt->update(['status' => 'generated']);
+                $assets[] = $asset;
+            }
+
             $assetIds = collect($assets)->pluck('id');
             $generatedAssets = Asset::with('category')->whereIn('id', $assetIds)->get();
             $categories = Category::all();
@@ -109,11 +127,21 @@ class AssetController extends Controller
                 'assets' => $generatedAssets,
                 'categories' => $categories,
                 'generated' => $generatedAssets,
-                'success' => 'Generated ' . count($assets) . ' assets successfully!'
+                'success' => 'Generated ' . count($assets) . ' assets (4K: ' . ($upscale ? 'Yes' : 'No') . ')!'
             ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Batch generation failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Generation failed: ' . $e->getMessage());
         }
+    }
+
+    public function generateUpscale(Request $request)
+    {
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'count' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        return $this->storeBatch($request->merge(['upscale' => true]));
     }
 
     public function upload(Request $request)

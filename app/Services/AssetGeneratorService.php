@@ -78,7 +78,7 @@ class AssetGeneratorService
     protected function tryGenerateAI(string $prompt): ?string
     {
         try {
-            // Use Pollinations with faster settings - generate at higher res for upscale
+            // Generate at 1024x1024 then upscale to 4K (2048x2048)
             $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . 
                    '?width=1024&height=1024&nologin=true&seed=' . rand(1, 99999) . 
                    '&enhance=false&model=flux';
@@ -124,7 +124,7 @@ class AssetGeneratorService
                 
                 // Update asset
                 $asset->update([
-                    'file_path' => str_replace('assets/', 'assets/', basename($newPath)),
+                    'file_path' => 'assets/' . basename($newPath),
                     'file_name' => basename($newPath),
                 ]);
                 
@@ -135,6 +135,62 @@ class AssetGeneratorService
         }
         
         // If upscale fails, return original
+        return $asset;
+    }
+
+    /**
+     * Generate and auto-upscale image
+     */
+    public function generateWithUpscale(int $promptId, string $categorySlug): Asset
+    {
+        $prompt = Prompt::findOrFail($promptId);
+        
+        // Try AI generation first
+        $imageData = $this->tryGenerateAI($prompt->prompt);
+        
+        // Fallback to placeholder if AI fails
+        if (empty($imageData)) {
+            $imageData = $this->createPlaceholderImage($prompt->prompt, $categorySlug);
+        }
+        
+        // Generate SEO-friendly filename
+        $fileName = $this->generateSeoFileName($categorySlug, $prompt->id, 'jpg');
+        $filePath = "assets/{$fileName}";
+        
+        // Save initial image
+        $fullPath = storage_path("app/public/{$filePath}");
+        file_put_contents($fullPath, $imageData);
+        
+        // Try to upscale
+        try {
+            $url = 'https://image.pollinations.ai/upscale?upscale=4';
+            $response = Http::timeout(45)->attach('image', $imageData, 'image.jpg')->post($url);
+            
+            if ($response->successful() && strlen($response->body()) > 10000) {
+                $upscaledPath = str_replace('.jpg', '_4k.jpg', $fullPath);
+                file_put_contents($upscaledPath, $response->body());
+                $fullPath = $upscaledPath;
+                $fileName = basename($upscaledPath);
+                $filePath = 'assets/' . $fileName;
+            }
+        } catch (\Exception $e) {
+            Log::warning("Auto-upscale failed, using original: " . $e->getMessage());
+        }
+        
+        // Create asset record
+        $asset = Asset::create([
+            'prompt_id' => $prompt->id,
+            'category_id' => $prompt->category_id,
+            'file_path' => $filePath,
+            'file_type' => 'image',
+            'file_name' => $fileName,
+            'status' => 'draft',
+        ]);
+
+        // Generate metadata for Adobe Stock
+        $metadata = app(AdobeStockOptimizerService::class)->generateMetadata($asset);
+        $asset->update($metadata);
+
         return $asset;
     }
 
