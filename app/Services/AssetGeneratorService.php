@@ -39,13 +39,8 @@ class AssetGeneratorService
     {
         $prompt = Prompt::findOrFail($promptId);
         
-        // Try AI generation first
-        $imageData = $this->generateWithAI($prompt->prompt);
-        
-        // Fallback to placeholder if AI fails
-        if (empty($imageData)) {
-            $imageData = $this->createPlaceholderImage($prompt->prompt, $categorySlug);
-        }
+        // Use placeholder (instant) - AI generation can be added later with async processing
+        $imageData = $this->createPlaceholderImage($prompt->prompt, $categorySlug);
         
         // Generate SEO-friendly filename
         $fileName = $this->generateSeoFileName($categorySlug, $prompt->id, 'jpg');
@@ -73,30 +68,11 @@ class AssetGeneratorService
     }
 
     /**
-     * Generate image using AI API - tries multiple providers
+     * Generate image using AI API - NOT USED for now (use async/queue for production)
      */
     protected function generateWithAI(string $prompt): ?string
     {
-        try {
-            // 1. Try Pollinations.ai (free, no API key needed)
-            $result = $this->generateWithPollinations($prompt);
-            if ($result) return $result;
-            
-            // 2. Try Hugging Face (if token is configured)
-            if (!empty($this->huggingfaceToken)) {
-                $result = $this->generateWithHuggingFace($prompt);
-                if ($result) return $result;
-            }
-            
-            // 3. Try DALL-E (if API key is configured)
-            if (!empty($this->openaiApiKey)) {
-                $result = $this->generateWithDallE($prompt);
-                if ($result) return $result;
-            }
-        } catch (\Exception $e) {
-            Log::error("AI Image generation failed: " . $e->getMessage());
-        }
-        
+        // Skip AI for now - use placeholder
         return null;
     }
 
