@@ -1,59 +1,155 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AI Asset Manager untuk Adobe Stock
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi Laravel + SQLite untuk membuat, mengelola, dan mengotomasi pembuatan gambar dan video menggunakan AI, yang hasilnya siap dijual ke Adobe Stock.
 
-## About Laravel
+## Fitur Utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1. AI Prompt Generator
+- Generate prompt otomatis untuk gambar & video berdasarkan kategori (bisnis, teknologi, lifestyle, dll)
+- Custom prompt manual
+- Multi bahasa (default: Inggris untuk stock)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 2. AI Image Generator Integration
+- Simpan hasil gambar (path lokal)
+- Support batch generate
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 3. AI Video Generator
+- Generate video dari prompt atau kumpulan gambar
+- Simpan ke lokal
 
-## Learning Laravel
+### 4. Automation System
+- Auto generate prompt harian
+- Auto generate image/video berdasarkan schedule
+- Auto rename file sesuai standar Adobe Stock (SEO friendly)
+- Generate metadata: title, description, keyword
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 5. Adobe Stock Optimization
+- Generate judul (SEO optimized)
+- Generate deskripsi
+- Generate 49 keyword relevan
+- Format sesuai standar Adobe Stock
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 6. Manajemen Asset
+- List gambar/video
+- Status: draft, ready, uploaded
+- Preview asset
 
-## Laravel Sponsors
+### 7. Export System
+- Export CSV metadata (untuk upload Adobe Stock)
+- Export file terstruktur (ZIP)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Requirements
 
-### Premium Partners
+- PHP 8.2+
+- Composer
+- SQLite (terintegrasi)
+- FFmpeg (untuk video generation - optional)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Installasi
 
-## Contributing
+```bash
+# Clone repository
+git clone <repo-url> ai-asset-manager
+cd ai-asset-manager
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Install dependencies
+composer install
 
-## Code of Conduct
+# Setup environment
+cp .env.example .env
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Generate key
+php artisan key:generate
 
-## Security Vulnerabilities
+# Setup SQLite di .env:
+DB_CONNECTION=sqlite
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Migrate database
+php artisan migrate
 
-## License
+# Seed data kategori
+php artisan db:seed
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Jalankan server
+php artisan serve
+```
+
+## API Endpoints
+
+### Categories
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/categories` | List semua kategori |
+| POST | `/api/categories` | Tambah kategori |
+| GET | `/api/categories/{id}` | Detail kategori |
+| PUT | `/api/categories/{id}` | Update kategori |
+| DELETE | `/api/categories/{id}` | Hapus kategori |
+
+### Prompts
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/prompts` | List semua prompt |
+| POST | `/api/prompts/generate` | Generate prompt otomatis |
+| POST | `/api/prompts/generate-batch` | Generate multiple prompts |
+| POST | `/api/prompts` | Buat manual prompt |
+| POST | `/api/prompts/categories` | Get available categories |
+
+### Assets
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/assets` | List semua asset |
+| POST | `/api/assets/generate/image` | Generate gambar |
+| POST | `/api/assets/generate/video` | Generate video |
+| POST | `/api/assets/generate/batch` | Batch generate |
+| POST | `/api/assets/upload` | Upload file |
+| POST | `/api/assets/{id}/optimize` | Optimasi Adobe Stock |
+| GET | `/api/assets/{id}/metadata` | Get metadata |
+| PUT | `/api/assets/{id}/status` | Update status |
+| DELETE | `/api/assets/{id}` | Hapus asset |
+
+### Automation
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/automation/schedules` | List schedule |
+| POST | `/api/automation/schedules` | Buat schedule |
+| POST | `/api/automation/schedules/{id}/run` | Jalankan manual |
+| POST | `/api/automation/schedules/{id}/toggle` | Toggle active |
+| POST | `/api/automation/run-all` | Jalankan semua |
+
+### Export
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/export/preview` | Preview export |
+| GET | `/api/export/csv` | Export CSV |
+| GET | `/api/export/json` | Export JSON |
+| GET | `/api/export/zip` | Export ZIP |
+
+## Contoh Penggunaan
+
+### Generate Prompt
+```bash
+curl -X POST http://localhost:8000/api/prompts/generate \
+  -H "Content-Type: application/json" \
+  -d '{"category":"bisnis","type":"image"}'
+```
+
+### Generate Image
+```bash
+curl -X POST http://localhost:8000/api/assets/generate/image \
+  -H "Content-Type: application/json" \
+  -d '{"prompt_id":1}'
+```
+
+### Optimize untuk Adobe Stock
+```bash
+curl -X POST http://localhost:8000/api/assets/1/optimize
+```
+
+### Export CSV
+```bash
+curl -X GET http://localhost:8000/api/export/csv -o export.csv
+```
+
+## Lisensi
+
+MIT
