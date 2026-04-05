@@ -105,11 +105,12 @@ class AssetGeneratorService
      */
     protected function generateWithPollinations(string $prompt): ?string
     {
-        $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . '?width=1024&height=1024&nologin=true&seed=' . rand(1, 999999);
+        // Use fast endpoint with shorter timeout
+        $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . '?width=512&height=512&nologin=true&seed=' . rand(1, 999999);
         
-        $response = Http::timeout(120)->get($url);
+        $response = Http::timeout(45)->get($url);
         
-        if ($response->successful() && strlen($response->body()) > 10000) {
+        if ($response->successful() && strlen($response->body()) > 5000) {
             return $response->body();
         }
         
