@@ -4,7 +4,49 @@
 @section('subtitle', 'Manage your AI prompts')
 
 @section('content')
-<!-- Actions -->
+<!-- Flash Messages / Generated Results -->
+@if(isset($prompt))
+<div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+    <h3 class="text-lg font-semibold text-indigo-800 dark:text-indigo-400 mb-3">✅ Prompt Generated</h3>
+    <div class="bg-white dark:bg-dark-700 rounded-lg p-4">
+        <p class="text-sm font-medium">{{ $prompt->prompt }}</p>
+        <div class="flex gap-4 mt-2 text-xs text-gray-500">
+            <span>Category: {{ $prompt->category->name ?? 'Unknown' }}</span>
+            <span>Type: {{ $prompt->type }}</span>
+            <span>Status: {{ $prompt->status }}</span>
+        </div>
+    </div>
+</div>
+@endif
+
+@if(isset($newPrompts) && count($newPrompts) > 0)
+<div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+    <h3 class="text-lg font-semibold text-indigo-800 dark:text-indigo-400 mb-3">✅ Generated {{ count($newPrompts) }} Prompts</h3>
+    <div class="space-y-2 max-h-64 overflow-y-auto">
+        @foreach($newPrompts as $p)
+            <div class="bg-white dark:bg-dark-700 rounded-lg p-3">
+                <p class="text-sm">{{ $p->prompt }}</p>
+                <div class="flex gap-4 mt-1 text-xs text-gray-500">
+                    <span>{{ $p->category->name ?? '' }}</span>
+                    <span>{{ $p->type }}</span>
+                </div>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
+@if(session('success'))
+<div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-6">
+    <p class="text-green-800 dark:text-green-400">{{ session('success') }}</p>
+</div>
+@endif
+
+@if(session('error'))
+<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+    <p class="text-red-800 dark:text-red-400">{{ session('error') }}</p>
+</div>
+@endif
 <div class="flex gap-4 mb-6">
     <button onclick="document.getElementById('generateModal').classList.remove('hidden')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

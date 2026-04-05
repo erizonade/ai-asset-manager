@@ -84,9 +84,12 @@ class PromptController extends Controller
                 ->first();
 
             $result['category_id'] = $category?->id;
-            $this->promptService->createPrompt($result);
+            $prompt = $this->promptService->createPrompt($result);
 
-            return redirect()->route('prompts.index')->with('success', 'Prompt generated!');
+            $prompts = Prompt::with('category')->orderBy('created_at', 'desc')->paginate(20);
+            $categories = Category::all();
+
+            return view('prompts.index', compact('prompts', 'categories', 'prompt'));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to generate prompt: ' . $e->getMessage());
         }
@@ -110,13 +113,19 @@ class PromptController extends Controller
             }
 
             $count = $validated['count'] ?? 5;
+            $newPrompts = [];
+            
             for ($i = 0; $i < $count; $i++) {
                 $result = $this->promptService->generateAuto($category->slug, 'en', $validated['type'] ?? 'image');
                 $result['category_id'] = $category->id;
-                $this->promptService->createPrompt($result);
+                $prompt = $this->promptService->createPrompt($result);
+                $newPrompts[] = $prompt;
             }
 
-            return redirect()->route('prompts.index')->with('success', "Generated {$count} prompts!");
+            $prompts = Prompt::with('category')->orderBy('created_at', 'desc')->paginate(20);
+            $categories = Category::all();
+
+            return view('prompts.index', compact('prompts', 'categories', 'newPrompts'));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed: ' . $e->getMessage());
         }

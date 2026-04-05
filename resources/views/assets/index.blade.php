@@ -4,7 +4,45 @@
 @section('subtitle', 'Manage your images and videos')
 
 @section('content')
-<!-- Filters -->
+<!-- Flash Messages / Generated Results -->
+@if(isset($generated) && $generated->count() > 0)
+<div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-green-800 dark:text-green-400">✅ Generated {{ $generated->count() }} Assets</h3>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        @foreach($generated as $asset)
+            <div class="bg-white dark:bg-dark-700 rounded-lg border border-green-200 dark:border-green-700 p-2">
+                <div class="aspect-square bg-gray-100 dark:bg-dark-600 rounded mb-2 overflow-hidden">
+                    @if($asset->file_type === 'image')
+                        <img src="{{ asset('storage/' . $asset->file_path) }}" alt="{{ $asset->title }}" class="w-full h-full object-cover">
+                    @else
+                        <div class="w-full h-full flex items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    @endif
+                </div>
+                <p class="text-xs font-medium truncate">{{ $asset->title ?? 'Untitled' }}</p>
+                <span class="text-xs px-2 py-0.5 rounded-full {{ $asset->status === 'ready' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">{{ $asset->status }}</span>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
+@if(session('success'))
+<div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-6">
+    <p class="text-green-800 dark:text-green-400">{{ session('success') }}</p>
+</div>
+@endif
+
+@if(session('error'))
+<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+    <p class="text-red-800 dark:text-red-400">{{ session('error') }}</p>
+</div>
+@endif
 <div class="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-dark-700 mb-6">
     <form method="GET" class="flex flex-wrap gap-4 items-end">
         <div>

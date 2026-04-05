@@ -100,7 +100,17 @@ class AssetController extends Controller
                 $validated['count'] ?? 5
             );
 
-            return redirect()->route('assets.index')->with('success', 'Generated ' . count($assets) . ' assets successfully!');
+            // Get fresh data for view
+            $assetIds = collect($assets)->pluck('id');
+            $generatedAssets = Asset::with('category')->whereIn('id', $assetIds)->get();
+            $categories = Category::all();
+
+            return view('assets.index', [
+                'assets' => $generatedAssets,
+                'categories' => $categories,
+                'generated' => $generatedAssets,
+                'success' => 'Generated ' . count($assets) . ' assets successfully!'
+            ]);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Batch generation failed: ' . $e->getMessage());
         }
