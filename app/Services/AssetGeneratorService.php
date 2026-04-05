@@ -6,11 +6,17 @@ use App\Models\Asset;
 use App\Models\Prompt;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AssetGeneratorService
 {
     protected string $storagePath;
+    
+    // AI Provider: 'huggingface', 'dalle', or 'none' for placeholder
+    protected string $aiProvider;
+    protected string $huggingfaceToken;
+    protected string $openaiApiKey;
 
     public function __construct()
     {
@@ -19,17 +25,27 @@ class AssetGeneratorService
         if (!file_exists($this->storagePath)) {
             mkdir($this->storagePath, 0755, true);
         }
+        
+        // Load configuration
+        $this->aiProvider = config('services.ai_image_provider', 'none');
+        $this->huggingfaceToken = config('services.huggingface_token', '');
+        $this->openaiApiKey = config('services.openai_api_key', '');
     }
 
     /**
-     * Generate mock image (placeholder) - replace with actual AI API in production
+     * Generate image - uses AI API or fallback to placeholder
      */
     public function generateImage(int $promptId, string $categorySlug): Asset
     {
         $prompt = Prompt::findOrFail($promptId);
         
-        // Create mock image - in production, integrate with DALL-E/Stable Diffusion API
-        $imageData = $this->createMockImage($prompt->prompt);
+        // Try AI generation first
+        $imageData = $this->generateWithAI($prompt->prompt);
+        
+        // Fallback to placeholder if AI fails
+        if (empty($imageData)) {
+            $imageData = $this->createPlaceholderImage($prompt->prompt, $categorySlug);
+        }
         
         // Generate SEO-friendly filename
         $fileName = $this->generateSeoFileName($categorySlug, $prompt->id, 'jpg');
@@ -54,6 +70,130 @@ class AssetGeneratorService
         $asset->update($metadata);
 
         return $asset;
+    }
+
+    /**
+     * Generate image using AI API
+     */
+    protected function generateWithAI(string $prompt): ?string
+    {
+        try {
+            if ($this->aiProvider === 'huggingface' && !empty($this->huggingfaceToken)) {
+                return $this->generateWithHuggingFace($prompt);
+            }
+            
+            if ($this->aiProvider === 'dalle' && !empty($this->openaiApiKey)) {
+                return $this->generateWithDallE($prompt);
+            }
+        } catch (\Exception $e) {
+            Log::error("AI Image generation failed: " . $e->getMessage());
+        }
+        
+        return null;
+    }
+
+    /**
+     * Generate using Hugging Face Inference API
+     * Uses Stable Diffusion - free tier available
+     */
+    protected function generateWithHuggingFace(string $prompt): ?string
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->huggingfaceToken,
+        ])
+        ->timeout(120)
+        ->post('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1', [
+            'inputs' => $prompt,
+        ]);
+
+        if ($response->successful()) {
+            return $response->body();
+        }
+        
+        Log::error("Hugging Face error: " . $response->status() . " - " . $response->body());
+        return null;
+    }
+
+    /**
+     * Generate using DALL-E API
+     */
+    protected function generateWithDallE(string $prompt): ?string
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->openaiApiKey,
+            'Content-Type' => 'application/json',
+        ])
+        ->timeout(120)
+        ->post('https://api.openai.com/v1/images/generations', [
+            'prompt' => $prompt,
+            'n' => 1,
+            'size' => '1024x1024',
+            'response_format' => 'b64_json',
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            if (isset($data['data'][0]['b64_json'])) {
+                return base64_decode($data['data'][0]['b64_json']);
+            }
+        }
+        
+        Log::error("DALL-E error: " . $response->status() . " - " . $response->body());
+        return null;
+    }
+
+    /**
+     * Create placeholder image (fallback)
+     */
+    protected function createPlaceholderImage(string $prompt, string $category): string
+    {
+        $img = imagecreatetruecolor(1024, 1024);
+        
+        // Category-based colors
+        $categoryColors = [
+            'bisnis' => [41, 53, 72, 52, 72, 94],      // blue-gray
+            'teknologi' => [15, 23, 42, 99, 102, 126], // dark blue
+            'lifestyle' => [251, 191, 36, 245, 158, 11], // amber
+            'alam' => [34, 197, 94, 22, 163, 74],       // green
+            'pendidikan' => [59, 130, 246, 37, 99, 235], // blue
+            'kesehatan' => [[236, 72, 153], [244, 63, 94]], // pink-red
+        ];
+        
+        $colors = $categoryColors[$category] ?? [30, 41, 59, 71, 85, 129];
+        
+        $bgColor = imagecolorallocate($img, $colors[0], $colors[1], $colors[2]);
+        $accentColor = imagecolorallocate($img, $colors[3], $colors[4], $colors[5]);
+        $textColor = imagecolorallocate($img, 255, 255, 255);
+        
+        imagefill($img, 0, 0, $bgColor);
+        
+        // Add some visual interest - geometric pattern
+        for ($i = 0; $i < 10; $i++) {
+            $x = rand(0, 800);
+            $y = rand(0, 800);
+            $size = rand(100, 400);
+            imagefilledellipse($img, $x, $y, $size, $size, $accentColor);
+        }
+        
+        // Add prompt text
+        $shortPrompt = substr($prompt, 0, 60);
+        $lines = str_split($shortPrompt, 30);
+        $y = 400;
+        foreach ($lines as $line) {
+            imagestring($img, 5, 200, $y, $line, $textColor);
+            $y += 20;
+        }
+        
+        // Add category label
+        imagestring($img, 7, 400, 950, "Category: " . strtoupper($category), $textColor);
+        
+        ob_start();
+        imagejpeg($img, null, 90);
+        $data = ob_get_clean();
+        
+        imagedestroy($img);
+        
+        return $data;
     }
 
     /**
@@ -117,41 +257,6 @@ class AssetGeneratorService
         $asset->update($metadata);
 
         return $asset;
-    }
-
-    /**
-     * Create mock image for testing
-     */
-    protected function createMockImage(string $prompt): string
-    {
-        // Create image using GD directly
-        $img = imagecreatetruecolor(800, 600);
-        
-        // Colors
-        $bgColor = imagecolorallocate($img, 26, 26, 46); // #1a1a2e
-        $color1 = imagecolorallocate($img, 102, 126, 234); // #667eea
-        $color2 = imagecolorallocate($img, 118, 75, 162); // #764ba2
-        $textColor = imagecolorallocate($img, 255, 255, 255);
-        
-        // Fill background
-        imagefill($img, 0, 0, $bgColor);
-        
-        // Add gradient (left half purple, right half blue-purple)
-        imagefilledrectangle($img, 0, 0, 400, 600, $color1);
-        imagefilledrectangle($img, 400, 0, 800, 600, $color2);
-        
-        // Add text
-        $shortPrompt = substr($prompt, 0, 35);
-        imagestring($img, 5, 50, 290, $shortPrompt, $textColor);
-        
-        // Output to string
-        ob_start();
-        imagejpeg($img, null, 90);
-        $data = ob_get_clean();
-        
-        imagedestroy($img);
-        
-        return $data;
     }
 
     /**
