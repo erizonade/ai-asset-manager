@@ -73,17 +73,25 @@ class AssetGeneratorService
     }
 
     /**
-     * Generate image using AI API
+     * Generate image using AI API - tries multiple providers
      */
     protected function generateWithAI(string $prompt): ?string
     {
         try {
-            if ($this->aiProvider === 'huggingface' && !empty($this->huggingfaceToken)) {
-                return $this->generateWithHuggingFace($prompt);
+            // 1. Try Pollinations.ai (free, no API key needed)
+            $result = $this->generateWithPollinations($prompt);
+            if ($result) return $result;
+            
+            // 2. Try Hugging Face (if token is configured)
+            if (!empty($this->huggingfaceToken)) {
+                $result = $this->generateWithHuggingFace($prompt);
+                if ($result) return $result;
             }
             
-            if ($this->aiProvider === 'dalle' && !empty($this->openaiApiKey)) {
-                return $this->generateWithDallE($prompt);
+            // 3. Try DALL-E (if API key is configured)
+            if (!empty($this->openaiApiKey)) {
+                $result = $this->generateWithDallE($prompt);
+                if ($result) return $result;
             }
         } catch (\Exception $e) {
             Log::error("AI Image generation failed: " . $e->getMessage());
@@ -93,16 +101,32 @@ class AssetGeneratorService
     }
 
     /**
-     * Generate using Hugging Face Inference API
-     * Uses Stable Diffusion - free tier available
+     * Generate using Pollinations.ai - free, no API key needed
+     */
+    protected function generateWithPollinations(string $prompt): ?string
+    {
+        $url = 'https://image.pollinations.ai/prompt/' . urlencode($prompt) . '?width=1024&height=1024&nologin=true&seed=' . rand(1, 999999);
+        
+        $response = Http::timeout(120)->get($url);
+        
+        if ($response->successful() && strlen($response->body()) > 10000) {
+            return $response->body();
+        }
+        
+        Log::error("Pollinations error: " . $response->status());
+        return null;
+    }
+
+    /**
+     * Generate using Hugging Face
      */
     protected function generateWithHuggingFace(string $prompt): ?string
     {
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->huggingfaceToken,
         ])
-        ->timeout(120)
-        ->post('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1', [
+        ->timeout(180)
+        ->post('https://router.huggingface.co/stabilityai/stable-diffusion-2-1-base', [
             'inputs' => $prompt,
         ]);
 
@@ -151,12 +175,12 @@ class AssetGeneratorService
         
         // Category-based colors
         $categoryColors = [
-            'bisnis' => [41, 53, 72, 52, 72, 94],      // blue-gray
-            'teknologi' => [15, 23, 42, 99, 102, 126], // dark blue
-            'lifestyle' => [251, 191, 36, 245, 158, 11], // amber
-            'alam' => [34, 197, 94, 22, 163, 74],       // green
-            'pendidikan' => [59, 130, 246, 37, 99, 235], // blue
-            'kesehatan' => [[236, 72, 153], [244, 63, 94]], // pink-red
+            'bisnis' => [41, 53, 72, 52, 72, 94],
+            'teknologi' => [15, 23, 42, 99, 102, 126],
+            'lifestyle' => [251, 191, 36, 245, 158, 11],
+            'alam' => [34, 197, 94, 22, 163, 74],
+            'pendidikan' => [59, 130, 246, 37, 99, 235],
+            'kesehatan' => [236, 72, 153, 244, 63, 94],
         ];
         
         $colors = $categoryColors[$category] ?? [30, 41, 59, 71, 85, 129];
@@ -167,7 +191,7 @@ class AssetGeneratorService
         
         imagefill($img, 0, 0, $bgColor);
         
-        // Add some visual interest - geometric pattern
+        // Add geometric pattern
         for ($i = 0; $i < 10; $i++) {
             $x = rand(0, 800);
             $y = rand(0, 800);
@@ -175,7 +199,7 @@ class AssetGeneratorService
             imagefilledellipse($img, $x, $y, $size, $size, $accentColor);
         }
         
-        // Add prompt text
+        // Add text
         $shortPrompt = substr($prompt, 0, 60);
         $lines = str_split($shortPrompt, 30);
         $y = 400;
@@ -184,7 +208,6 @@ class AssetGeneratorService
             $y += 20;
         }
         
-        // Add category label
         imagestring($img, 7, 400, 950, "Category: " . strtoupper($category), $textColor);
         
         ob_start();
