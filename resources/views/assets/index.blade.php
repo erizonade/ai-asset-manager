@@ -175,14 +175,11 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ $asset->category->name ?? 'Unknown' }}</p>
                 <div class="flex gap-2 mt-2">
                     <a href="{{ route('assets.show', $asset) }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View</a>
+                    <a href="{{ asset('storage/' . $asset->file_path) }}" download="{{ $asset->file_name }}" class="text-xs text-green-600 hover:underline">Download</a>
                     <form action="{{ route('assets.status', $asset) }}" method="POST" class="inline">
                         @csrf
                         <input type="hidden" name="status" value="{{ $asset->status === 'draft' ? 'ready' : 'uploaded' }}">
                         <button type="submit" class="text-xs text-green-600 hover:underline">{{ $asset->status === 'draft' ? 'Mark Ready' : 'Mark Uploaded' }}</button>
-                    </form>
-                    <form action="{{ route('assets.optimize', $asset) }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" class="text-xs text-blue-600 hover:underline">Optimize</button>
                     </form>
                 </div>
             </div>

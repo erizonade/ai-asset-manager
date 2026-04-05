@@ -72,10 +72,13 @@
                 </form>
                 <form action="{{ route('assets.upscale', $asset) }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium">
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium mb-2">
                         🔥 Upscale to 4K
                     </button>
                 </form>
+                <a href="{{ asset('storage/' . $asset->file_path) }}" download="{{ $asset->file_name }}" class="w-full block text-center bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium">
+                    ⬇️ Download Image
+                </a>
             </div>
         </div>
 
