@@ -9,6 +9,7 @@ use App\Models\Prompt;
 use App\Services\AssetGeneratorService;
 use App\Services\VideoGeneratorService;
 use App\Services\AdobeStockOptimizerService;
+use App\Services\PromptGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
